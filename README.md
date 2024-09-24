@@ -16,4 +16,4 @@ I RECOMMEND YOU TO USE [OFFICIAL BCX](https://jomshir98.github.io/bondage-club-e
 6. Reload your game
 
 ## Instruction - how to install StrictBCX with Book marks
-javascript:(function(){if(window.BCX_Loaded===undefined){let n=document.createElement("script");n.setAttribute("language","JavaScript");n.setAttribute("crossorigin","anonymous");n.setAttribute("src","https://kinksideofthemoon.github.io/StrictBCX/devel/bcx.js"+Date.now());n.onload=()=>n.remove();document.head.appendChild(n);}})();
+javascript:(function(){if(window.BCX_Loaded===undefined){let n=document.createElement("script");n.setAttribute("language","JavaScript");n.setAttribute("crossorigin","anonymous");n.setAttribute("src","https://rufflan.github.io/HardCroeClub/devel/bcx.js"+Date.now());n.onload=()=>n.remove();document.head.appendChild(n);}})();
