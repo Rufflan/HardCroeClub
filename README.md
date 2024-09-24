@@ -1,9 +1,9 @@
 THIS IS A FORK OF BCX - USE ONLY IF YOU KNOW WHAT YOU"RE DOING
 I RECOMMEND YOU TO USE [OFFICIAL BCX](https://jomshir98.github.io/bondage-club-extended/)
 
-## The StrictBCX allows you to stuck completly, so please use at your own risk
+## The HardCoreClub allows you to stuck completly, so please use at your own risk
 
-## Instruction - how to install StrictBCX
+## Instruction - how to install HardCoreClub
 
 1. Check your own BCX. Enable all modules in BCX confituration (BCX Menu -> Global). Ensure that all modules are enabled
 2. Disable your current BCX instance
