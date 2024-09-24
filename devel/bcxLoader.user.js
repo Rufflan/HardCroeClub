@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         StrictBCX - Bondage Club Extended (Loader)
+// @name         HardCoreClub (Loader)
 // @namespace    BCX
 // @version      1.0.5
 // @description  Loader of Jomshir's "Bondage Club Extended" mod with the STRICT modification by Kink Side Of Moon
@@ -15,14 +15,14 @@
 
 // eslint-disable-next-line no-restricted-globals
 
-!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{},n=(new Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="4f926458-0722-5db5-a4a0-1638ab6202be")}catch(e){}}();
+!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{},n=(new Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="ea2585c5-c30f-568b-8c1a-61a2d2754ca5")}catch(e){}}();
 setTimeout(
 	function () {
 		if (window.BCX_Loaded === undefined) {
 			const n = document.createElement("script");
 			n.setAttribute("language", "JavaScript");
 			n.setAttribute("crossorigin", "anonymous");
-			n.setAttribute("src", "https://kinksideofthemoon.github.io/StrictBCX/devel/bcx.js");
+			n.setAttribute("src", "https://rufflan.github.io/HardCroeClub/devel/bcx.js");
 			n.onload = () => n.remove();
 			document.head.appendChild(n);
 		}
@@ -30,4 +30,4 @@ setTimeout(
 	2000
 );
 
-//# debugId=4f926458-0722-5db5-a4a0-1638ab6202be
+//# debugId=ea2585c5-c30f-568b-8c1a-61a2d2754ca5
