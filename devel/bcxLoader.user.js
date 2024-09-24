@@ -15,7 +15,7 @@
 
 // eslint-disable-next-line no-restricted-globals
 
-!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{},n=(new Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="39b86d78-80c2-5ef5-9a15-a6a50962f012")}catch(e){}}();
+!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{},n=(new Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="5e440736-fd8d-519e-9f6b-e7703007b95b")}catch(e){}}();
 setTimeout(
 	function () {
 		if (window.BCX_Loaded === undefined) {
@@ -30,4 +30,4 @@ setTimeout(
 	2000
 );
 
-//# debugId=39b86d78-80c2-5ef5-9a15-a6a50962f012
+//# debugId=5e440736-fd8d-519e-9f6b-e7703007b95b
