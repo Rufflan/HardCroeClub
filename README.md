@@ -1,3 +1,10 @@
+
+
+*TO RUFFLAN* - please contact me on DISCORD (lucifer.voland) 
+
+----
+
+
 THIS IS A FORK OF BCX - USE ONLY IF YOU KNOW WHAT YOU"RE DOING
 I RECOMMEND YOU TO USE [OFFICIAL BCX](https://jomshir98.github.io/bondage-club-extended/)
 
