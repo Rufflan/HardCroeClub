@@ -14,8 +14,6 @@
 // ==/UserScript==
 
 // eslint-disable-next-line no-restricted-globals
-
-!function(){try{var e="undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{},n=(new Error).stack;n&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[n]="fc0abcda-0e2e-5a2a-b439-a646edd1784d")}catch(e){}}();
 setTimeout(
 	function () {
 		if (window.BCX_Loaded === undefined) {
@@ -29,5 +27,3 @@ setTimeout(
 	},
 	2000
 );
-
-//# debugId=fc0abcda-0e2e-5a2a-b439-a646edd1784d
