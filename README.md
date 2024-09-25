@@ -1,6 +1,6 @@
 
 
-*TO RUFFLAN* - please contact me on DISCORD (lucifer.voland) 
+*TO RUFFLAN* - please contact me on DISCORD (lucifer.voland) --> i tried add you in discord.
 
 ----
 
