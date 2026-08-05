@@ -19,7 +19,7 @@ import { ChatRoomActionMessage, ChatRoomSendLocal, DrawImageEx, getCharacterName
 import { BaseModule } from "./_BaseModule";
 import { AccessLevel, registerPermission } from "./authority";
 import { Command_fixExclamationMark, COMMAND_GENERIC_ERROR, Command_pickAutocomplete, registerWhisperCommand } from "./commands";
-import { ConditionsAutocompleteSubcommand, ConditionsCheckAccess, ConditionsGetCategoryPublicData, ConditionsGetCondition, ConditionsIsConditionInEffect, ConditionsRegisterCategory, ConditionsRemoveCondition, ConditionsRunSubcommand, ConditionsSetCondition, ConditionsSubcommand, ConditionsSubcommands } from "./conditions";
+import { ConditionsAutocompleteSubcommand, ConditionsConditionBlockedByRule, ConditionsCheckAccess, ConditionsGetCategoryPublicData, ConditionsGetCondition, ConditionsIsConditionInEffect, ConditionsRegisterCategory, ConditionsRemoveCondition, ConditionsRunSubcommand, ConditionsSetCondition, ConditionsSubcommand, ConditionsSubcommands } from "./conditions";
 import { getCurrentSubscreen, setSubscreen } from "./gui";
 import { LogEntryType, logMessage } from "./log";
 import { queryHandlers } from "./messaging";
@@ -764,6 +764,10 @@ export function RulesDelete(rule: BCX_Rule, character: ChatroomCharacter | null)
 	if (character && !ConditionsCheckAccess("rules", rule, character))
 		return false;
 
+	const data = ConditionsGetCondition("rules", rule);
+	if (data && ConditionsConditionBlockedByRule("rules", data, character))
+		return false;
+
 	const display = RulesGetDisplayDefinition(rule);
 
 	if (ConditionsRemoveCondition("rules", rule) && character) {
@@ -1342,11 +1346,11 @@ export class ModuleRules extends BaseModule {
 					const validator: ZodType<ConditionsCategorySpecificPublicData["rules"]> = zod.object({
 						enforce: zod.boolean(),
 						log: zod.boolean(),
-						customData: zod.record(zod.any()).optional(),
+						customData: zod.record(zod.string(), zod.any()).optional(),
 					});
 					const validationResult = validator.safeParse(data);
 					if (!validationResult.success) {
-						return [false, JSON.stringify(validationResult.error.format(), undefined, "\t")];
+						return [false, JSON.stringify(zod.prettifyError(validationResult.error), undefined, "\t")];
 					}
 					const validatedData = validationResult.data;
 					const definition = rules.get(condition);

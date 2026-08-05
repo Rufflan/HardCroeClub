@@ -14,6 +14,91 @@ On the bright side we also aren't simply going away. There is a certain secret p
 
 # BCX Changelog
 
+## 1.1.16
+
+- [FIX] `alt_set_nickname` improperly clearing the nickname when restoring
+
+## 1.1.15
+
+- [CHORE] Fix some deprecated BC R129 things
+- [FIX] Curse imports
+
+## 1.1.14
+
+- [FIX] Fix the allowed interaction menu in profile (#72)
+- [ADD] Implement the speech_using_honorifics rule (#73)
+- [ADD] Allow whispers in some of the speech rules (#74)
+- [FIX] Fix "Limit bound admin power" rule
+- [CHORE] Remove unused function defs from last commit
+- [FIX] Allow undef data to flow through the import
+- [FIX] Use pretty zod errors instead of trees
+- [CHORE] Bump bc-stubs to R129
+
+## 1.1.13
+
+- [ADD] Rules blocking self-tying and freeing others (#55)
+- [FIX] Properly log triggers vs. attempts for block_restrict_allowed_poses (#57)
+- [FIX] Properly disable item dialog buttons in rules (#56)
+- [FIX] `bcx_block_tying_self` & `bcx_block_tying_others` callback conflict (#58)
+- [FEATURE] Allow blocking item swapping in `block_freeing_*` rules (#59)
+- [FIX] Update ChatAdminRun patches for !6119 (#61)
+- [REMOVE] Remove Patreon links
+- [FIX] Prevent a crash if the stack trace is too short
+- [FIX] Actually engage brain and respect the interface
+- [FIX] Try grabbing the first stack frame as well
+- [FIX] update chat room menu related rules (#66)
+- [CHORE] Spring cleanup (#68)
+- [FEATURE] Expose character roles through the external API (#69)
+- [CHORE] Bump all dependencies (#70)
+- [FIX] Change speech_restrict_beep_send to apply to the low-level beep send (#71)
+
+## 1.1.12
+
+This update changes the following:
+- Updated to BC R124
+- Removed `speech_garble_whispers` rule since BC works like that by default now
+- Improved the crash reporter to report promise rejection errors as well as normal errors
+- Bulk curse changes now properly store the responsible character info
+- Implement rules blocking self access to curses/rules placed by others
+
+
+## 1.1.11
+
+This update changes the following:
+- Update to BC R123
+- Fix the broken localization for some of the Dialog buttons
+- Fix a crash in case a room has no tooltip
+- Fix the rc_sub_new rule being broken
+
+## 1.1.10
+
+This update fixes the curses group UI and a curse application loop caused by a change in BC R122.
+
+## 1.1.9
+
+This update changes the following:
+- Fix a conflict with UBC's chat lobby customizations
+- Fix the "Mandatory words" rule not triggering
+- Implement `speech_replace_spoken_words`/"Replace spoken words" rule
+- Fix a crash when being summoned out of a room
+- Properly hide the new Allowed Interaction selector of BC when opening BCX
+- Ensure that the color picker is only disabled for cursed items when the curse is actually active (#46)
+
+## 1.1.8
+
+This update changes the following:
+- Preliminary compatibility with the color picker changes coming in R122
+- Updating the `block_entering_rooms` to work with the new chat lobby interface
+- Closing a speech restriction bypass using the `/whisper` command, ensuring those messages also get restricted
+- Fixing a low-priority hook in the admin screen allowing other mods be called even though at that point the whole screen might be custom; fixes an UBC UI element hovering around in the template & theme customization subscreens
+
+## 1.1.7
+
+This update adds the following:
+- Several new APIs that other mod developers can use to better integrate with BCX. See: [`src/bcxExternalInterface.d.ts`](https://github.com/Jomshir98/bondage-club-extended/blob/master/src/bcxExternalInterface.d.ts)
+- A new utility chat command `.debugreport` to easily generate a manual debug report for debugging other problems than crashes
+- Support for Asia servers in the UserScript loader
+
 ## 1.1.6
 
 This update fixes some missing background images that were added to BC.

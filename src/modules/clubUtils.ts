@@ -159,13 +159,13 @@ export class ModuleClubUtils extends BaseModule {
 	load() {
 		registerCommandParsed("utility", "dice", "[dice sides | <rolls>d<dice sides>] - Shows only you the result of rolling a dice the given number of times",
 			(args) => {
-				let sides: number = 6;
-				let rolls: number = 1;
 				// no argument
 				if (args.length < 1) {
 					rollDice(6, 1);
 					// at least one argument
 				} else {
+					let sides: number;
+					let rolls: number;
 					// check first argument
 					if (/^[0-9]+$/.test(args[0])) {
 						sides = Number.parseInt(args[0], 10);
@@ -296,11 +296,11 @@ export class ModuleClubUtils extends BaseModule {
 						return false;
 					}
 					if (subcommand === "locked") {
-						const Locked = args[1] === "yes" ? true : false;
-						updateChatroom({ Locked });
+						const Access: ServerChatRoomRole[] = args[1] === "yes" ? ["Admin", "Whitelist"] : ["All"];
+						updateChatroom({ Access });
 					} else {
-						const Private = args[1] === "yes" ? true : false;
-						updateChatroom({ Private });
+						const Visibility: ServerChatRoomRole[] = args[1] === "yes" ? ["Admin", "Whitelist"] : ["All"];
+						updateChatroom({ Visibility });
 					}
 				} else if (subcommand === "size" || subcommand === "limit" || subcommand === "slots") {
 					const size = args.length === 2 && /^[0-9]+$/.test(args[1]) && Number.parseInt(args[1], 10);
@@ -380,13 +380,13 @@ export class ModuleClubUtils extends BaseModule {
 						ChatRoomSendLocal(`Unable to find a valid room template in slot ${slot}. You likely need to set one in the chat room creation screen.`);
 						return false;
 					}
-					const size = typeof template.Limit === "number" ? template.Limit : Number.parseInt(template.Limit as unknown as string, 10);
+					const size = typeof template.Limit === "number" ? template.Limit : Number.parseInt(template.Limit, 10);
 					updateChatroom({
 						Name: template.Name,
 						Description: template.Description,
 						Background: template.Background,
-						Private: template.Private,
-						Locked: template.Locked,
+						Visibility: template.Visibility,
+						Access: template.Access,
 						Game: template.Game,
 						Admin: template.Admin,
 						Whitelist: template.Whitelist,
@@ -590,8 +590,8 @@ export class ModuleClubUtils extends BaseModule {
 			}
 		);
 		hookFunction("ActivityCheckPrerequisite", 6, (args, next) => {
-			const prereq = args[0] as string;
-			const acted = args[2] as Character;
+			const prereq = args[0];
+			const acted = args[2];
 			if (!prereq.startsWith("Has") && !prereq.startsWith("TargetHas") && acted.MemberNumber != null && activitiesAllowed.has(acted.MemberNumber))
 				return true;
 			return next(args);

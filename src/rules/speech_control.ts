@@ -51,11 +51,19 @@ export function initRules_bc_speech_control() {
 		},
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
+			allowWhispers: {
+				Y: 370,
+				type: "toggle",
+				default: false,
+				description: "Allow whispers",
+			},
 			soundWhitelist: {
+				Y: 490,
 				type: "stringList",
 				default: [],
 				description: "Set the allowed sounds:",
 				options: {
+					pageSize: 3,
 					validate: /^\p{L}*$/iu,
 				},
 			},
@@ -63,8 +71,8 @@ export function initRules_bc_speech_control() {
 		init(state) {
 			const check = (msg: SpeechMessageInfo): boolean => {
 				const sounds = state.customData?.soundWhitelist;
-				if (sounds && sounds.length > 0 && (msg.type === "Chat" || msg.type === "Whisper")) {
-					const message = (msg.originalMessage).toLocaleLowerCase();
+				if (sounds && sounds.length > 0 && (msg.type === "Chat" || !state.customData.allowWhispers && msg.type === "Whisper")) {
+					const message = (msg.noOOCMessage ?? msg.originalMessage).toLocaleLowerCase();
 					return checkMessageForSounds(sounds, message);
 				}
 				return true;
@@ -86,41 +94,6 @@ export function initRules_bc_speech_control() {
 		},
 	});
 
-	registerRule("speech_garble_whispers", {
-		name: "Garble whispers while gagged",
-		type: RuleType.Speech,
-		loggable: false,
-		shortDescription: "same as normal messages",
-		longDescription:
-			"This rule alters PLAYER_NAME's outgoing whisper messages while gagged to be garbled the same way normal chat messages are. " +
-			"This means, that strength of the effect depends on the type of gag and (OOC text) is not affected. Note: While the rule is in effect, " +
-			"the BC immersion preference 'Prevent OOC & whispers while gagged' is altered, to allow gagged whispers, " +
-			"since those are now garbled by the rule. OOC ARE ALSO AFFECTED.",
-
-		keywords: ["garbling", "whispering"],
-		triggerTexts: {
-			infoBeep: "You are not allowed to use OOC in messages while gagged.",
-			attempt_log: "PLAYER_NAME tried to use OOC in a message while gagged",
-			log: "PLAYER_NAME used OOC in a message while gagged",
-		},
-		defaultLimit: ConditionsLimit.limited,
-		init(state) {
-			registerSpeechHook({
-				modify: (info, message) => {
-					console.log(info);
-					console.log("speech_garble_whispers speech_control modify");
-					return state.isEnforced && info.type === "Whisper" ? callOriginal("SpeechGarble", [Player, message, true]) : message
-				},
-			});
-		},
-		load(state) {
-			hookFunction("ChatRoomShouldBlockGaggedOOCMessage", 2, (args, next) => {
-				if (state.isEnforced && ChatRoomTargetMemberNumber >= 0) return false;
-				return next(args);
-			}, ModuleCategory.Rules);
-		},
-	});
-
 	registerRule("speech_block_gagged_ooc", {
 		name: "Block OOC chat while gagged",
 		type: RuleType.Speech,
@@ -132,11 +105,17 @@ export function initRules_bc_speech_control() {
 			attempt_log: "PLAYER_NAME tried to use OOC in a message while gagged",
 			log: "PLAYER_NAME used OOC in a message while gagged",
 		},
+		dataDefinition: {
+			allowWhispers: {
+				Y: 370,
+				type: "toggle",
+				default: false,
+				description: "Allow whispers",
+			},
+		},
 		defaultLimit: ConditionsLimit.blocked,
 		init(state) {
-
-			//const check = (msg: SpeechMessageInfo): boolean => !msg.hasOOC || Player.CanTalk();
-
+			const check = (msg: SpeechMessageInfo): boolean => !msg.hasOOC || Player.CanTalk() || msg.type !== "Chat" && (state.customData?.allowWhispers || msg.type !== "Whisper");
 			registerSpeechHook({
 				allowSend: (msg) => {
 					if (state.isEnforced && msg.hasOOC && !Player.CanTalk()) {
@@ -168,11 +147,17 @@ export function initRules_bc_speech_control() {
 			attempt_log: "PLAYER_NAME tried to use OOC in a message",
 			log: "PLAYER_NAME used OOC in a message",
 		},
+		dataDefinition: {
+			allowWhispers: {
+				Y: 370,
+				type: "toggle",
+				default: false,
+				description: "Allow whispers",
+			},
+		},
 		defaultLimit: ConditionsLimit.blocked,
 		init(state) {
-
-			//const check = (msg: SpeechMessageInfo): boolean => !msg.hasOOC;
-
+			const check = (msg: SpeechMessageInfo): boolean => !msg.hasOOC || msg.type !== "Chat" && (state.customData?.allowWhispers || msg.type !== "Whisper");
 			registerSpeechHook({
 				allowSend: (msg) => {
 					if (state.isEnforced && msg.hasOOC) {
@@ -656,19 +641,18 @@ export function initRules_bc_speech_control() {
 			},
 		},
 		load(state) {
-			hookFunction("FriendListBeepMenuSend", 5, (args, next) => {
+			hookFunction("ServerSendBeepMessage", 5, (args, next) => {
+				const [target] = args;
 				if (state.inEffect &&
 					state.customData &&
-					(document.getElementById("FriendListBeepTextArea") as HTMLTextAreaElement | null)?.value &&
-					FriendListBeepTarget != null &&
-					!state.customData.whitelistedMemberNumbers.includes(FriendListBeepTarget) &&
+					!state.customData.whitelistedMemberNumbers.includes(target) &&
 					(!Player.CanInteract() || !state.customData.onlyWhenBound)
 				) {
 					if (state.isEnforced) {
-						state.triggerAttempt(FriendListBeepTarget);
+						state.triggerAttempt(target);
 						return;
 					}
-					state.trigger(FriendListBeepTarget);
+					state.trigger(target);
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
@@ -853,29 +837,45 @@ export function initRules_bc_speech_control() {
 		},
 	});
 
-	/* TODO: Implement
-	// TODO: { TARGET_PLAYER: `${msg.target ? getCharacterName(msg.target, "[unknown]") : "[unknown]"} (${msg.target})` }
 	registerRule("speech_using_honorifics", {
 		name: "Using honorifics",
 		type: RuleType.Speech,
 		shortDescription: "in front of specific names in all chat, whisper and OOC messages",
 		longDescription: "Define a listing of words (e.g. Miss, Mistress, ...) where one of them always needs to be typed before any one out of a listing of names (e.g. Julia, Eve, ...) in all chat, whisper and OOC messages. Needs a certain syntax (e.g. [Goddess,Mistress;Lily,Clare],[slut;Mona], ...)",
 		triggerTexts: {
-			infoBeep: "You broke a rule to always use a honorific when speaking TARGET_PLAYER's name!",
-			attempt_log: "PLAYER_NAME almost broke a rule by forgetting to be polite to TARGET_PLAYER",
-			log: "PLAYER_NAME broke a rule by forgetting to be polite to TARGET_PLAYER"
+			infoBeep: "You broke a rule to always use a honorific when speaking TARGET_NAME's name!",
+			attempt_log: "PLAYER_NAME almost broke a rule by forgetting to be polite to TARGET_NAME",
+			log: "PLAYER_NAME broke a rule by forgetting to be polite to TARGET_NAME",
 		},
+		keywords: ["force", "respect"],
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			stringWithRuleSyntax: {
 				type: "string",
-				default: "",
-				description: "List in syntax: [honorific1;name1],[h2,h3,...;n2,n3,...],...",
-				options: /^([^/.*()\s][^()]*)?$/
-			}
-		}
+				default: "[Sandra,Mia;Goddess],[Bert;Sir]",
+				description: "List in syntax: [name1,name2;honorific1],[n2,n3,...;h2],...",
+				options: /^([^/.*()\s][^()]*)?$/,
+			},
+		},
+		init(state) {
+			registerSpeechHook({
+				allowSend(info) {
+					let status = SpeechHookAllow.ALLOW;
+					if (state.isEnforced) {
+						const replaceSpokenMap = parseStringReplacingSyntax(state.customData?.stringWithRuleSyntax);
+						for (const [name, honorific] of replaceSpokenMap.entries()) {
+							const rx = new RegExp(`(?<!\\b${honorific}\\s+)${name}`, "g");
+							if (rx.test(info.rawMessage)) {
+								state.trigger(null, { "TARGET_NAME": `${honorific} ${name}` });
+								status = SpeechHookAllow.BLOCK;
+							}
+						}
+					}
+					return status;
+				},
+			});
+		},
 	});
-	*/
 
 	registerRule("speech_force_retype", {
 		name: "Force to retype",

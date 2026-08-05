@@ -150,6 +150,8 @@ interface BCX_Events {
 	};
 }
 
+type BCX_CharacterRole = "self" | "clubowner" | "owner" | "lover" | "mistress" | "whitelist" | "friend" | "public";
+
 interface BCX_ModAPI extends BCXEventEmitter<BCX_Events> {
 	/** Name of the mod this API was requested for */
 	readonly modName: string;
@@ -159,6 +161,9 @@ interface BCX_ModAPI extends BCXEventEmitter<BCX_Events> {
 
 	/** Returns info about how a slot is cursed */
 	getCurseInfo(group: AssetGroupName): BCX_CurseInfo | null;
+
+	/** Returns the BCX role for the target number. */
+	getCharacterRole(target: number): BCX_CharacterRole;
 
 	/**
 	 * Sends a BCX query to another character in the same room, or to Player.

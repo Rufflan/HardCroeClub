@@ -3,6 +3,7 @@ import { moduleInitPhase } from "../moduleManager";
 import { capitalizeFirstLetter, isObject, typedObjectAssumedEntries, typedObjectAssumedKeys } from "../utils";
 import { notifyOfChange, queryHandlers } from "./messaging";
 import { moduleIsEnabled } from "./presets";
+import { RulesGetRuleState } from "./rules";
 import { modStorage, modStorageSync } from "./storage";
 import { BaseModule } from "./_BaseModule";
 
@@ -30,7 +31,7 @@ export const schema_ConditionsConditionRequirements: ZodType<ConditionsCondition
 		inverted: zod.literal(true).optional(),
 	}).optional(),
 	role: zod.object({
-		role: zod.nativeEnum(AccessLevel),
+		role: zod.enum(AccessLevel),
 		inverted: zod.literal(true).optional(),
 	}).optional(),
 	player: zod.object({
@@ -275,9 +276,9 @@ export function ConditionsRegisterCategory<C extends ConditionsCategories>(categ
 					requirements: schema_ConditionsConditionRequirements,
 					timer: zod.number().nullable(),
 					timerRemove: zod.boolean(),
-					data: zod.custom((data) => handler.validateCategorySpecificGlobalData(data as ConditionsCategorySpecificGlobalData[C])),
+					data: zod.custom((data) => handler.validateCategorySpecificGlobalData(data as ConditionsCategorySpecificGlobalData[C])).optional(),
 				}) as ZodType<ConditionsCategoryConfigurableData>,
-				conditions: zod.record(zod.object({
+				conditions: zod.record(zod.string(), zod.object({
 					active: zod.boolean(),
 					data: zod.unknown().optional(),
 					timer: zod.number().nullable(),
@@ -313,7 +314,7 @@ export function ConditionsRegisterCategory<C extends ConditionsCategories>(categ
 			return res + `Done!`;
 		},
 		importPermissions: [handler.permission_changeLimits],
-		importValidator: zod.record(zod.nativeEnum(ConditionsLimit)),
+		importValidator: zod.record(zod.string(), zod.enum(ConditionsLimit)),
 	});
 }
 
@@ -470,6 +471,29 @@ export function ConditionsCheckAccess<C extends ConditionsCategories>(category: 
 		return false;
 	const handler = ConditionsGetCategoryHandler(category);
 	return checkPermissionAccess(limit === ConditionsLimit.limited ? handler.permission_limited : handler.permission_normal, character);
+}
+
+/** Whether a category of conditions has the *possibility* of being influenced by a currently active rule */
+export function ConditionsCategoryInfluencedByRule<C extends ConditionsCategories>(category: C, character: ChatroomCharacter | null): boolean {
+	if (!character) return false;
+	if (character.isPlayer()) {
+		if (category === "curses" && RulesGetRuleState("block_curses_self_by_others").isEnforced)
+			return true;
+		if (category === "rules" && RulesGetRuleState("block_rules_self_by_others").isEnforced)
+			return true;
+	}
+	return false;
+}
+
+export function ConditionsConditionBlockedByRule<C extends ConditionsCategories>(category: C, data: ConditionsConditionData<C>, character: ChatroomCharacter | null): boolean {
+	if (!character) return false;
+	if (character.isPlayer() && data.addedBy && data.addedBy !== character.MemberNumber) {
+		if (category === "curses" && RulesGetRuleState("block_curses_self_by_others").isEnforced)
+			return true;
+		if (category === "rules" && RulesGetRuleState("block_rules_self_by_others").isEnforced)
+			return true;
+	}
+	return false;
 }
 
 export function ConditionsRemoveCondition<C extends ConditionsCategories>(category: C, conditions: ConditionsCategoryKeys[C] | ConditionsCategoryKeys[C][]): boolean {
