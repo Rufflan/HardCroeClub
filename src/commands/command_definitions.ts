@@ -340,7 +340,7 @@ export function initCommands_definitions() {
 				return false;
 			}
 			const Name = argv.slice(2).join(" ");
-			const Private = argv[0] === "private";
+			const Visibility: ServerChatRoomRole[] = argv[0] === "private" ? ["Admin"] : ["All"];
 			const playerNumber = Player.MemberNumber;
 
 			if (!playerNumber) {
@@ -371,8 +371,8 @@ export function initCommands_definitions() {
 				Name,
 				Description: "",
 				Background,
-				Private,
-				Locked: false,
+				Visibility,
+				Access: ["All"],
 				Space: "",
 				Game: "",
 				Admin,
@@ -609,7 +609,7 @@ export function initCommands_definitions() {
 		defaultLimit: ConditionsLimit.blocked,
 		playerUsable: false,
 		trigger: (argv, sender, respond) => {
-			if (ReputationCharacterGet(Player, "Maid") < 1) {
+			if (ReputationGet(Player, "Maid") < 1) {
 				respond(`${Player.Name} must be a maid recognized by the maid sorority to be taken in for the job.`);
 				return false;
 			}

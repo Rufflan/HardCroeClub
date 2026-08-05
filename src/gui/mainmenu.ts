@@ -9,7 +9,7 @@ import { GuiRelationships } from "./relationships";
 import { GuiSubscreen } from "./subscreen";
 import { setSubscreen } from "../modules/gui";
 import { VERSION } from "../config";
-import { icon_ExternalLink, icon_heart } from "../resources";
+import { icon_discord, icon_ExternalLink, icon_heart } from "../resources";
 import { drawIcon, DrawImageEx } from "../utilsClub";
 import { GuiConditionViewCurses } from "./conditions_view_curses";
 import { GuiConditionViewRules } from "./conditions_view_rules";
@@ -162,17 +162,17 @@ export class GuiMainMenu extends GuiSubscreen {
 
 		MainCanvas.textAlign = "center";
 		if (this.character.isPlayer()) {
-			DrawText(`Your Hard Core Club version: ${VERSION.replace(/-[0-f]+$/i, "")}`, 1450 + 400 / 2, 500, "Black", "");
-			DrawButton(1450, 590, 400, 90, "", "White", "", "Open changelog on GitHub");
+			DrawText(`Your Hard Core Club version: ${VERSION.replace(/-[0-f]+$/i, "")}`, 1450 + 400 / 2, 610, "Black", "");
+			DrawButton(1450, 700, 400, 90, "", "White", "", "Open changelog on GitHub");
 			if (versionCheckNewAvailable === true) {
 				const tick = Date.now() % 6_000;
 				if (tick < 3_000) {
-					DrawText(`New version available`, 1450 + 400 / 2, 555, "Red", "Black");
+					DrawText(`New version available`, 1450 + 400 / 2, 665, "Red", "Black");
 				} else {
-					DrawText(`Login again to upgrade`, 1450 + 400 / 2, 555, "Red", "Black");
+					DrawText(`Login again to upgrade`, 1450 + 400 / 2, 665, "Red", "Black");
 				}
 			} else if (versionCheckNewAvailable === false) {
-				DrawText(`This is the latest version`, 1450 + 400 / 2, 555, "Black", "");
+				DrawText(`This is the latest version`, 1450 + 400 / 2, 665, "Black", "");
 			}
 			DrawText(`View changelog`, 1450 + 350 / 2, 635, "Black", "");
 			DrawImageEx(icon_ExternalLink, 1770, 620, { Width: 30, Height: 30 });
@@ -195,7 +195,7 @@ export class GuiMainMenu extends GuiSubscreen {
 			setSubscreen(new GuiTutorial(this.character, false));
 		}
 		if (MouseIn(1450, 590, 400, 90) && this.character.isPlayer()) {
-			window.open(`https://github.com/kinksideofthemoon/StrictBCX/releases/tag/${VERSION.replace(/-[0-f]+$/i, "")}`, "_blank");
+			window.open(`https://github.com/Rufflan/HardCroeClub/releases/tag/${VERSION.replace(/-[0-f]+$/i, "")}`, "_blank");
 		}
 		for (let i = 0; i < MAIN_MENU_ITEMS.length; i++) {
 			const e = MAIN_MENU_ITEMS[i];
@@ -209,9 +209,8 @@ export class GuiMainMenu extends GuiSubscreen {
 
 	Exit(): void {
 		super.Exit();
-		InformationSheetLoad();
-		// @ts-expect-error waiting on bc-stubs
-		// eslint-disable-next-line
-		if (window.InformationSheetResize) InformationSheetResize();
+		InformationSheetLoad().then(() => {
+			InformationSheetResize();
+		});
 	}
 }
