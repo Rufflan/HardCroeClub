@@ -95,86 +95,106 @@ export function initRules_bc_speech_control() {
 	});
 
 	registerRule("speech_block_gagged_ooc", {
-		name: "Block OOC chat while gagged",
-		type: RuleType.Speech,
-		shortDescription: "no more misuse of OOC for normal chatting while gagged",
-		longDescription: "This rule forbids PLAYER_NAME to use OOC (messages between round brackets) in chat or OOC whisper messages while she is gagged.",
-		keywords: ["parentheses", "prevent", "forbid"],
-		triggerTexts: {
-			infoBeep: "You are not allowed to use OOC in messages while gagged.",
-			attempt_log: "PLAYER_NAME tried to use OOC in a message while gagged",
-			log: "PLAYER_NAME used OOC in a message while gagged",
-		},
-		dataDefinition: {
-			allowWhispers: {
-				Y: 370,
-				type: "toggle",
-				default: false,
-				description: "Allow whispers",
-			},
-		},
-		defaultLimit: ConditionsLimit.blocked,
-		init(state) {
-			const check = (msg: SpeechMessageInfo): boolean => !msg.hasOOC || Player.CanTalk() || msg.type !== "Chat" && (state.customData?.allowWhispers || msg.type !== "Whisper");
-			registerSpeechHook({
-				allowSend: (msg) => {
-					if (state.isEnforced && msg.hasOOC && !Player.CanTalk()) {
-						state.triggerAttempt();
-						console.log("OOC talk was blocked while gagged");
-						return SpeechHookAllow.BLOCK;
-					}
-					return SpeechHookAllow.ALLOW;
-				},
-				onSend: (msg) => {
-					if (state.inEffect && msg.hasOOC) {
-						state.trigger();
-					}
-				},
-			});
-		},
-	});
+        name: "Block OOC chat while gagged",
+        type: RuleType.Speech,
+        shortDescription: "no more misuse of OOC for normal chatting while gagged",
+        longDescription: "This rule forbids PLAYER_NAME to use OOC (messages between round brackets) in chat, emotes, or whisper messages while she is gagged.",
+        keywords: ["parentheses", "prevent", "forbid", "gagged"],
+        triggerTexts: {
+            infoBeep: "You are not allowed to use OOC in messages while gagged.",
+            attempt_log: "PLAYER_NAME tried to use OOC in a message while gagged",
+            log: "PLAYER_NAME used OOC in a message while gagged",
+        },
+        dataDefinition: {
+            allowWhispers: {
+                Y: 370,
+                type: "toggle",
+                default: false,
+                description: "Allow whispers",
+            },
+        },
+        defaultLimit: ConditionsLimit.blocked,
+        init(state) {
+            // 메시지 통과(허용) 조건 체크
+            const check = (msg: SpeechMessageInfo): boolean => {
+                // 1. OOC 괄호가 없으면 허용
+                if (!msg.hasOOC) return true;
+                // 2. 재갈이 물려있지 않아 말을 할 수 있는 상태면 허용
+                if (Player.CanTalk()) return true;
+                // 3. '귓속말 허용' 옵션이 켜져 있고 실제 귓속말인 경우에만 예외적으로 허용
+                if (Boolean(state.customData?.allowWhispers) && msg.type === "Whisper") return true;
 
-	registerRule("speech_block_ooc", {
-		name: "Block OOC chat",
-		type: RuleType.Speech,
-		shortDescription: "blocks use of OOC in messages",
-		longDescription:
-			"This rule forbids PLAYER_NAME to use OOC (messages between round brackets) in chat or OOC whisper messages at any moment." +
-			" This is a very extreme rule and should be used with great caution!",
-		keywords: ["parentheses", "prevent", "forbid"],
-		triggerTexts: {
-			infoBeep: "You are not allowed to use OOC in messages!",
-			attempt_log: "PLAYER_NAME tried to use OOC in a message",
-			log: "PLAYER_NAME used OOC in a message",
-		},
-		dataDefinition: {
-			allowWhispers: {
-				Y: 370,
-				type: "toggle",
-				default: false,
-				description: "Allow whispers",
-			},
-		},
-		defaultLimit: ConditionsLimit.blocked,
-		init(state) {
-			const check = (msg: SpeechMessageInfo): boolean => !msg.hasOOC || msg.type !== "Chat" && (state.customData?.allowWhispers || msg.type !== "Whisper");
-			registerSpeechHook({
-				allowSend: (msg) => {
-					if (state.isEnforced && msg.hasOOC) {
-						console.log("OOC talk whas blocked");
-						state.triggerAttempt();
-						return SpeechHookAllow.BLOCK;
-					}
-					return SpeechHookAllow.ALLOW;
-				},
-				onSend: (msg) => {
-					if (state.inEffect && msg.hasOOC) {
-						state.trigger();
-					}
-				},
-			});
-		},
-	});
+                // 그 외 모든 경우(일반 채팅, 이모트(*) 등)는 차단
+                return false;
+            };
+
+            registerSpeechHook({
+                allowSend: (msg) => {
+                    if (state.isEnforced && !check(msg)) {
+                        state.triggerAttempt();
+                        return SpeechHookAllow.BLOCK;
+                    }
+                    return SpeechHookAllow.ALLOW;
+                },
+                onSend: (msg) => {
+                    if (state.inEffect && !check(msg)) {
+                        state.trigger();
+                    }
+                },
+            });
+        },
+    });
+
+    registerRule("speech_block_ooc", {
+        name: "Block OOC chat",
+        type: RuleType.Speech,
+        shortDescription: "blocks use of OOC in messages",
+        longDescription:
+            "This rule forbids PLAYER_NAME to use OOC (messages between round brackets) in chat, emotes, or whisper messages at any moment." +
+            " This is a very extreme rule and should be used with great caution!",
+        keywords: ["parentheses", "prevent", "forbid"],
+        triggerTexts: {
+            infoBeep: "You are not allowed to use OOC in messages!",
+            attempt_log: "PLAYER_NAME tried to use OOC in a message",
+            log: "PLAYER_NAME used OOC in a message",
+        },
+        dataDefinition: {
+            allowWhispers: {
+                Y: 370,
+                type: "toggle",
+                default: false,
+                description: "Allow whispers",
+            },
+        },
+        defaultLimit: ConditionsLimit.blocked,
+        init(state) {
+            // 메시지 통과(허용) 조건 체크
+            const check = (msg: SpeechMessageInfo): boolean => {
+                // 1. OOC 괄호가 없으면 허용
+                if (!msg.hasOOC) return true;
+                // 2. '귓속말 허용' 옵션이 켜져 있고 실제 귓속말인 경우에만 예외적으로 허용
+                if (Boolean(state.customData?.allowWhispers) && msg.type === "Whisper") return true;
+
+                // 그 외 모든 경우(일반 채팅, 이모트(*) 등)는 상시 차단
+                return false;
+            };
+
+            registerSpeechHook({
+                allowSend: (msg) => {
+                    if (state.isEnforced && !check(msg)) {
+                        state.triggerAttempt();
+                        return SpeechHookAllow.BLOCK;
+                    }
+                    return SpeechHookAllow.ALLOW;
+                },
+                onSend: (msg) => {
+                    if (state.inEffect && !check(msg)) {
+                        state.trigger();
+                    }
+                },
+            });
+        },
+    });
 
 	registerRule("speech_doll_talk", {
 		name: "Doll talk",
