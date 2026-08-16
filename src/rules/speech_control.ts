@@ -173,7 +173,8 @@ export function initRules_bc_speech_control() {
                 if (!msg.hasOOC) return true;
                 // 2. '귓속말 허용' 옵션이 켜져 있고 실제 귓속말인 경우에만 예외적으로 허용
                 if (Boolean(state.customData?.allowWhispers) && msg.type === "Whisper") return true;
-
+				console.log(state.customData);
+				console.log(msg);
                 // 그 외 모든 경우(일반 채팅, 이모트(*) 등)는 상시 차단
                 return false;
             };
