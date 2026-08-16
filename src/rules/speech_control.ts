@@ -113,27 +113,45 @@ export function initRules_bc_speech_control() {
             },
         },
         defaultLimit: ConditionsLimit.blocked,
-        // [1] 다른 모드(UltraBC, WCE 등)의 직접 전송(ServerSend)까지 최종 차단
         load(state) {
+            // [1] 내 화면에 출력되는 로컬 에코(채팅창 출력) 차단
+            hookFunction("ChatRoomMessage", 10, (args, next) => {
+                const data = args[0];
+
+                if (
+                    state.isEnforced &&
+                    isObject(data) &&
+                    data.Sender === Player.MemberNumber && // 내가 보낸 메시지인 경우
+                    typeof data.Content === "string" &&
+                    !Player.CanTalk() // 재갈 물린 상태
+                ) {
+                    const hasOOC = /\([^)]+\)/.test(data.Content);
+                    const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && data.Type === "Whisper";
+
+                    if (hasOOC && !isWhisperAllowed) {
+                        return; // 화면에 메시지를 출력하지 않고 무시
+                    }
+                }
+                return next(args);
+            }, ModuleCategory.Rules);
+
+            // [2] 서버로 나가는 패킷 전송 차단
             hookFunction("ServerSend", 10, (args, next) => {
                 const messageType = args[0];
                 const data = args[1];
 
-                // messageType이 "ChatRoomChat"이고 data가 객체일 때
                 if (
                     state.isEnforced &&
                     messageType === "ChatRoomChat" &&
                     isObject(data) &&
-                    !Player.CanTalk() // 재갈이 물린 상태
+                    !Player.CanTalk()
                 ) {
-                    // 타입을 any 또는 객체 속성으로 안전하게 캐스팅
                     const chatData = data as { Content?: string; Type?: string; Target?: number };
 
                     if (typeof chatData.Content === "string") {
                         const hasOOC = /\([^)]+\)/.test(chatData.Content);
                         const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && chatData.Type === "Whisper";
 
-                        // 재갈 물린 상태에서 OOC가 포함되어 있고 귓속말 허용 예외가 아니라면 차단
                         if (hasOOC && !isWhisperAllowed) {
                             state.triggerAttempt();
                             return; // 서버 전송 취소
@@ -190,6 +208,27 @@ export function initRules_bc_speech_control() {
         },
         defaultLimit: ConditionsLimit.blocked,
         load(state) {
+            // [1] 내 화면에 출력되는 로컬 에코(채팅창 출력) 차단
+            hookFunction("ChatRoomMessage", 10, (args, next) => {
+                const data = args[0];
+
+                if (
+                    state.isEnforced &&
+                    isObject(data) &&
+                    data.Sender === Player.MemberNumber &&
+                    typeof data.Content === "string"
+                ) {
+                    const hasOOC = /\([^)]+\)/.test(data.Content);
+                    const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && data.Type === "Whisper";
+
+                    if (hasOOC && !isWhisperAllowed) {
+                        return; // 화면에 메시지를 출력하지 않고 무시
+                    }
+                }
+                return next(args);
+            }, ModuleCategory.Rules);
+
+            // [2] 서버로 나가는 패킷 전송 차단
             hookFunction("ServerSend", 10, (args, next) => {
                 const messageType = args[0];
                 const data = args[1];
@@ -207,7 +246,7 @@ export function initRules_bc_speech_control() {
 
                         if (hasOOC && !isWhisperAllowed) {
                             state.triggerAttempt();
-                            return;
+                            return; // 서버 전송 취소
                         }
                     }
                 }
