@@ -115,24 +115,29 @@ export function initRules_bc_speech_control() {
         defaultLimit: ConditionsLimit.blocked,
         // [1] 다른 모드(UltraBC, WCE 등)의 직접 전송(ServerSend)까지 최종 차단
         load(state) {
-            // 우선순위 10 (높은 우선순위)으로 ServerSend를 가로챔
             hookFunction("ServerSend", 10, (args, next) => {
-                const [messageType, data] = args;
+                const messageType = args[0];
+                const data = args[1];
 
+                // messageType이 "ChatRoomChat"이고 data가 객체일 때
                 if (
                     state.isEnforced &&
                     messageType === "ChatRoomChat" &&
                     isObject(data) &&
-                    typeof data.Content === "string" &&
-                    !Player.CanTalk() // 재갈 물린 상태
+                    !Player.CanTalk() // 재갈이 물린 상태
                 ) {
-                    const hasOOC = /\([^)]+\)/.test(data.Content);
-                    const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && data.Type === "Whisper";
+                    // 타입을 any 또는 객체 속성으로 안전하게 캐스팅
+                    const chatData = data as { Content?: string; Type?: string; Target?: number };
 
-                    // 재갈 물린 상태에서 OOC가 포함되어 있고 귓속말 예외가 아니면 전송 취소
-                    if (hasOOC && !isWhisperAllowed) {
-                        state.triggerAttempt();
-                        return; // next(args)를 호출하지 않고 패킷 전송을 버림
+                    if (typeof chatData.Content === "string") {
+                        const hasOOC = /\([^)]+\)/.test(chatData.Content);
+                        const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && chatData.Type === "Whisper";
+
+                        // 재갈 물린 상태에서 OOC가 포함되어 있고 귓속말 허용 예외가 아니라면 차단
+                        if (hasOOC && !isWhisperAllowed) {
+                            state.triggerAttempt();
+                            return; // 서버 전송 취소
+                        }
                     }
                 }
                 return next(args);
@@ -186,20 +191,24 @@ export function initRules_bc_speech_control() {
         defaultLimit: ConditionsLimit.blocked,
         load(state) {
             hookFunction("ServerSend", 10, (args, next) => {
-                const [messageType, data] = args;
+                const messageType = args[0];
+                const data = args[1];
 
                 if (
                     state.isEnforced &&
                     messageType === "ChatRoomChat" &&
-                    isObject(data) &&
-                    typeof data.Content === "string"
+                    isObject(data)
                 ) {
-                    const hasOOC = /\([^)]+\)/.test(data.Content);
-                    const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && data.Type === "Whisper";
+                    const chatData = data as { Content?: string; Type?: string; Target?: number };
 
-                    if (hasOOC && !isWhisperAllowed) {
-                        state.triggerAttempt();
-                        return;
+                    if (typeof chatData.Content === "string") {
+                        const hasOOC = /\([^)]+\)/.test(chatData.Content);
+                        const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && chatData.Type === "Whisper";
+
+                        if (hasOOC && !isWhisperAllowed) {
+                            state.triggerAttempt();
+                            return;
+                        }
                     }
                 }
                 return next(args);
