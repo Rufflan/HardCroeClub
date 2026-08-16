@@ -129,7 +129,8 @@ export function initRules_bc_speech_control() {
 
             registerSpeechHook({
                 allowSend: (msg) => {
-                    if (state.isEnforced && !check(msg)) {
+					const isAllowed = check(msg);
+					if (state.isEnforced && !isAllowed) {
                         state.triggerAttempt();
                         return SpeechHookAllow.BLOCK;
                     }
@@ -181,7 +182,8 @@ export function initRules_bc_speech_control() {
 
             registerSpeechHook({
                 allowSend: (msg) => {
-                    if (state.isEnforced && !check(msg)) {
+					const isAllowed = check(msg);
+                    if (state.isEnforced && !isAllowed) {
                         state.triggerAttempt();
                         return SpeechHookAllow.BLOCK;
                     }
