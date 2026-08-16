@@ -97,7 +97,7 @@ export function initRules_bc_speech_control() {
         name: "Block OOC chat while gagged",
         type: RuleType.Speech,
         shortDescription: "no more misuse of OOC for normal chatting while gagged",
-        longDescription: "This rule forbids PLAYER_NAME to use OOC (messages between round brackets) in chat, emotes, or whisper messages while she is gagged.",
+        longDescription: "This rule forbids PLAYER_NAME to use OOC in chat, emotes, or whisper messages while she is gagged.",
         keywords: ["parentheses", "prevent", "forbid", "gagged"],
         triggerTexts: {
             infoBeep: "You are not allowed to use OOC in messages while gagged.",
@@ -113,24 +113,43 @@ export function initRules_bc_speech_control() {
             },
         },
         defaultLimit: ConditionsLimit.blocked,
-        init(state) {
-            // 메시지 통과(허용) 조건 체크
-            const check = (msg: SpeechMessageInfo): boolean => {
-                // 1. OOC 괄호가 없으면 허용
-                if (!msg.hasOOC) return true;
-                // 2. 재갈이 물려있지 않아 말을 할 수 있는 상태면 허용
-                if (Player.CanTalk()) return true;
-                // 3. '귓속말 허용' 옵션이 켜져 있고 실제 귓속말인 경우에만 예외적으로 허용
-                if (Boolean(state.customData?.allowWhispers) && msg.type === "Whisper") return true;
+        // [1] 다른 모드(UltraBC, WCE 등)의 직접 전송(ServerSend)까지 최종 차단
+        load(state) {
+            // 우선순위 10 (높은 우선순위)으로 ServerSend를 가로챔
+            hookFunction("ServerSend", 10, (args, next) => {
+                const [messageType, data] = args;
 
-                // 그 외 모든 경우(일반 채팅, 이모트(*) 등)는 차단
+                if (
+                    state.isEnforced &&
+                    messageType === "ChatRoomChat" &&
+                    isObject(data) &&
+                    typeof data.Content === "string" &&
+                    !Player.CanTalk() // 재갈 물린 상태
+                ) {
+                    const hasOOC = /\([^)]+\)/.test(data.Content);
+                    const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && data.Type === "Whisper";
+
+                    // 재갈 물린 상태에서 OOC가 포함되어 있고 귓속말 예외가 아니면 전송 취소
+                    if (hasOOC && !isWhisperAllowed) {
+                        state.triggerAttempt();
+                        return; // next(args)를 호출하지 않고 패킷 전송을 버림
+                    }
+                }
+                return next(args);
+            }, ModuleCategory.Rules);
+        },
+        // [2] 일반 채팅 입력창 차단 및 UI/로깅 처리
+        init(state) {
+            const check = (msg: SpeechMessageInfo): boolean => {
+                if (!msg.hasOOC) return true;
+                if (Player.CanTalk()) return true;
+                if (Boolean(state.customData?.allowWhispers) && msg.type === "Whisper") return true;
                 return false;
             };
 
             registerSpeechHook({
                 allowSend: (msg) => {
-					const isAllowed = check(msg);
-					if (state.isEnforced && !isAllowed) {
+                    if (state.isEnforced && !check(msg)) {
                         state.triggerAttempt();
                         return SpeechHookAllow.BLOCK;
                     }
@@ -149,9 +168,7 @@ export function initRules_bc_speech_control() {
         name: "Block OOC chat",
         type: RuleType.Speech,
         shortDescription: "blocks use of OOC in messages",
-        longDescription:
-            "This rule forbids PLAYER_NAME to use OOC (messages between round brackets) in chat, emotes, or whisper messages at any moment." +
-            " This is a very extreme rule and should be used with great caution!",
+        longDescription: "This rule forbids PLAYER_NAME to use OOC at any moment.",
         keywords: ["parentheses", "prevent", "forbid"],
         triggerTexts: {
             infoBeep: "You are not allowed to use OOC in messages!",
@@ -167,23 +184,37 @@ export function initRules_bc_speech_control() {
             },
         },
         defaultLimit: ConditionsLimit.blocked,
+        load(state) {
+            hookFunction("ServerSend", 10, (args, next) => {
+                const [messageType, data] = args;
+
+                if (
+                    state.isEnforced &&
+                    messageType === "ChatRoomChat" &&
+                    isObject(data) &&
+                    typeof data.Content === "string"
+                ) {
+                    const hasOOC = /\([^)]+\)/.test(data.Content);
+                    const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && data.Type === "Whisper";
+
+                    if (hasOOC && !isWhisperAllowed) {
+                        state.triggerAttempt();
+                        return;
+                    }
+                }
+                return next(args);
+            }, ModuleCategory.Rules);
+        },
         init(state) {
-            // 메시지 통과(허용) 조건 체크
             const check = (msg: SpeechMessageInfo): boolean => {
-                // 1. OOC 괄호가 없으면 허용
                 if (!msg.hasOOC) return true;
-                // 2. '귓속말 허용' 옵션이 켜져 있고 실제 귓속말인 경우에만 예외적으로 허용
                 if (Boolean(state.customData?.allowWhispers) && msg.type === "Whisper") return true;
-				console.log(state.customData);
-				console.log(msg);
-                // 그 외 모든 경우(일반 채팅, 이모트(*) 등)는 상시 차단
                 return false;
             };
 
             registerSpeechHook({
                 allowSend: (msg) => {
-					const isAllowed = check(msg);
-                    if (state.isEnforced && !isAllowed) {
+                    if (state.isEnforced && !check(msg)) {
                         state.triggerAttempt();
                         return SpeechHookAllow.BLOCK;
                     }
