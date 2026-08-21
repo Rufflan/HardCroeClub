@@ -872,7 +872,7 @@ export function initRules_bc_speech_control() {
 		defaultLimit: ConditionsLimit.limited,
 		dataDefinition: {
 			stringWithReplacingSyntax: {
-				type: "string",
+				type: "textArea",
 				default: "[I,me;this cutie],[spoken_word;replaced_with_this_word]",
 				description: "List in syntax: [word1;substitute1],[w2,w3,...;s2],...",
 				options: /^([^/.*()][^()]*)?$/,
