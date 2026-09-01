@@ -155,7 +155,7 @@ export function modStorageSync() {
 		localStorage.setItem(getLocalStorageName(), finalSave);
 	} else if (modStorageLocation === StorageLocations.ExtensionSettings) {
 		// Store as object format
-		Player.ExtensionSettings.BCX = { data: finalSave };
+		Player.ExtensionSettings.BCX = { data: finalSave } as any;
 		ServerPlayerExtensionSettingsSync("BCX", true);
 	} else {
 		throw new Error(`Unknown StorageLocation`);
