@@ -5,10 +5,10 @@ import { isObject } from "./utils";
 import bcModSDK from "bondage-club-mod-sdk";
 
 const modApi = bcModSDK.registerMod({
-	name: "HardCoreClub",
-	fullName: "HardCroeClub",
+	name: "BCX",
+	fullName: "Bondage Club Extended",
 	version: BCX_VERSION,
-	repository: "https://github.com/Rufflan/HardCroeClub",
+	repository: "https://github.com/Jomshir98/bondage-club-extended",
 });
 
 bcModSDK.errorReporterHooks.hookEnter = (fn, mod) => {
