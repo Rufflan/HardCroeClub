@@ -154,7 +154,8 @@ export function modStorageSync() {
 	} else if (modStorageLocation === StorageLocations.LocalStorage) {
 		localStorage.setItem(getLocalStorageName(), finalSave);
 	} else if (modStorageLocation === StorageLocations.ExtensionSettings) {
-		Player.ExtensionSettings.BCX = finalSave;
+		// Store as object format
+		Player.ExtensionSettings.BCX = { data: finalSave };
 		ServerPlayerExtensionSettingsSync("BCX", true);
 	} else {
 		throw new Error(`Unknown StorageLocation`);
@@ -190,7 +191,17 @@ export class ModuleStorage extends BaseModule {
 				alert("BCX: Failed to load data, please see console for more details");
 				return false;
 			}
-			saved = Player.ExtensionSettings.BCX;
+			// Support both object format { data: "..." } and string format
+			const extBCX = Player.ExtensionSettings.BCX;
+			if (isObject(extBCX) && typeof extBCX.data === "string") {
+				// New object format: { data: "..." }
+				saved = extBCX.data;
+			} else if (typeof extBCX === "string") {
+				// Legacy string format: "..."
+				saved = extBCX;
+			} else {
+				saved = extBCX;
+			}
 			modStorageLocation = StorageLocations.ExtensionSettings;
 		}
 
