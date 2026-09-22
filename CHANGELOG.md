@@ -14,6 +14,12 @@ On the bright side we also aren't simply going away. There is a certain secret p
 
 # BCX Changelog
 
+## 1.1.20
+
+- [CHORE] Update for R132
+- [FIX] Rewire Import/Export into the new wardrobe screen
+- [FIX] Fix the load button stretched appearance in label mode
+
 ## 1.1.19
 
 - [FIX] Ensure that conditional requirements are checked before a curse disables the color picker (#79)
