@@ -94,82 +94,188 @@ export function initRules_bc_speech_control() {
 	});
 
 	registerRule("speech_block_gagged_ooc", {
-		name: "Block OOC chat while gagged",
-		type: RuleType.Speech,
-		shortDescription: "no more misuse of OOC for normal chatting while gagged",
-		longDescription: "This rule forbids PLAYER_NAME to use OOC (messages between round brackets) in chat or OOC whisper messages while she is gagged.",
-		keywords: ["parentheses", "prevent", "forbid"],
-		triggerTexts: {
-			infoBeep: "You are not allowed to use OOC in messages while gagged.",
-			attempt_log: "PLAYER_NAME tried to use OOC in a message while gagged",
-			log: "PLAYER_NAME used OOC in a message while gagged",
-		},
-		dataDefinition: {
-			allowWhispers: {
-				Y: 370,
-				type: "toggle",
-				default: false,
-				description: "Allow whispers",
-			},
-		},
-		defaultLimit: ConditionsLimit.blocked,
-		init(state) {
-			const check = (msg: SpeechMessageInfo): boolean => !msg.hasOOC || Player.CanTalk() || msg.type !== "Chat" && (state.customData?.allowWhispers || msg.type !== "Whisper");
-			registerSpeechHook({
-				allowSend: (msg) => {
-					if (state.isEnforced && !check(msg)) {
-						state.triggerAttempt();
-						return SpeechHookAllow.BLOCK;
-					}
-					return SpeechHookAllow.ALLOW;
-				},
-				onSend: (msg) => {
-					if (state.inEffect && !check(msg)) {
-						state.trigger();
-					}
-				},
-			});
-		},
-	});
+        name: "Block OOC chat while gagged",
+        type: RuleType.Speech,
+        shortDescription: "no more misuse of OOC for normal chatting while gagged",
+        longDescription: "This rule forbids PLAYER_NAME to use OOC in chat, emotes, or whisper messages while she is gagged.",
+        keywords: ["parentheses", "prevent", "forbid", "gagged"],
+        triggerTexts: {
+            infoBeep: "You are not allowed to use OOC in messages while gagged.",
+            attempt_log: "PLAYER_NAME tried to use OOC in a message while gagged",
+            log: "PLAYER_NAME used OOC in a message while gagged",
+        },
+        dataDefinition: {
+            allowWhispers: {
+                Y: 370,
+                type: "toggle",
+                default: false,
+                description: "Allow whispers",
+            },
+        },
+        defaultLimit: ConditionsLimit.blocked,
+        load(state) {
+            // [1] 내 화면에 출력되는 로컬 에코(채팅창 출력) 차단
+            hookFunction("ChatRoomMessage", 10, (args, next) => {
+                const data = args[0];
 
-	registerRule("speech_block_ooc", {
-		name: "Block OOC chat",
-		type: RuleType.Speech,
-		shortDescription: "blocks use of OOC in messages",
-		longDescription: "This rule forbids PLAYER_NAME to use OOC (messages between round brackets) in chat or OOC whisper messages at any moment. This is a very extreme rule and should be used with great caution!",
-		keywords: ["parentheses", "prevent", "forbid"],
-		triggerTexts: {
-			infoBeep: "You are not allowed to use OOC in messages!",
-			attempt_log: "PLAYER_NAME tried to use OOC in a message",
-			log: "PLAYER_NAME used OOC in a message",
-		},
-		dataDefinition: {
-			allowWhispers: {
-				Y: 370,
-				type: "toggle",
-				default: false,
-				description: "Allow whispers",
-			},
-		},
-		defaultLimit: ConditionsLimit.blocked,
-		init(state) {
-			const check = (msg: SpeechMessageInfo): boolean => !msg.hasOOC || msg.type !== "Chat" && (state.customData?.allowWhispers || msg.type !== "Whisper");
-			registerSpeechHook({
-				allowSend: (msg) => {
-					if (state.isEnforced && !check(msg)) {
-						state.triggerAttempt();
-						return SpeechHookAllow.BLOCK;
-					}
-					return SpeechHookAllow.ALLOW;
-				},
-				onSend: (msg) => {
-					if (state.inEffect && !check(msg)) {
-						state.trigger();
-					}
-				},
-			});
-		},
-	});
+                if (
+                    state.isEnforced &&
+                    isObject(data) &&
+                    data.Sender === Player.MemberNumber && // 내가 보낸 메시지인 경우
+                    typeof data.Content === "string" &&
+                    !Player.CanTalk() // 재갈 물린 상태
+                ) {
+                    const hasOOC = /\([^)]+\)/.test(data.Content);
+                    const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && data.Type === "Whisper";
+
+                    if (hasOOC && !isWhisperAllowed) {
+                        return; // 화면에 메시지를 출력하지 않고 무시
+                    }
+                }
+                return next(args);
+            }, ModuleCategory.Rules);
+
+            // [2] 서버로 나가는 패킷 전송 차단
+            hookFunction("ServerSend", 10, (args, next) => {
+                const messageType = args[0];
+                const data = args[1];
+
+                if (
+                    state.isEnforced &&
+                    messageType === "ChatRoomChat" &&
+                    isObject(data) &&
+                    !Player.CanTalk()
+                ) {
+                    const chatData = data as { Content?: string; Type?: string; Target?: number };
+
+                    if (typeof chatData.Content === "string") {
+                        const hasOOC = /\([^)]+\)/.test(chatData.Content);
+                        const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && chatData.Type === "Whisper";
+
+                        if (hasOOC && !isWhisperAllowed) {
+                            state.triggerAttempt();
+                            return; // 서버 전송 취소
+                        }
+                    }
+                }
+                return next(args);
+            }, ModuleCategory.Rules);
+        },
+        // [2] 일반 채팅 입력창 차단 및 UI/로깅 처리
+        init(state) {
+            const check = (msg: SpeechMessageInfo): boolean => {
+                if (!msg.hasOOC) return true;
+                if (Player.CanTalk()) return true;
+                if (Boolean(state.customData?.allowWhispers) && msg.type === "Whisper") return true;
+                return false;
+            };
+
+            registerSpeechHook({
+                allowSend: (msg) => {
+                    if (state.isEnforced && !check(msg)) {
+                        state.triggerAttempt();
+                        return SpeechHookAllow.BLOCK;
+                    }
+                    return SpeechHookAllow.ALLOW;
+                },
+                onSend: (msg) => {
+                    if (state.inEffect && !check(msg)) {
+                        state.trigger();
+                    }
+                },
+            });
+        },
+    });
+
+    registerRule("speech_block_ooc", {
+        name: "Block OOC chat",
+        type: RuleType.Speech,
+        shortDescription: "blocks use of OOC in messages",
+        longDescription: "This rule forbids PLAYER_NAME to use OOC at any moment.",
+        keywords: ["parentheses", "prevent", "forbid"],
+        triggerTexts: {
+            infoBeep: "You are not allowed to use OOC in messages!",
+            attempt_log: "PLAYER_NAME tried to use OOC in a message",
+            log: "PLAYER_NAME used OOC in a message",
+        },
+        dataDefinition: {
+            allowWhispers: {
+                Y: 370,
+                type: "toggle",
+                default: false,
+                description: "Allow whispers",
+            },
+        },
+        defaultLimit: ConditionsLimit.blocked,
+        load(state) {
+            // [1] 내 화면에 출력되는 로컬 에코(채팅창 출력) 차단
+            hookFunction("ChatRoomMessage", 10, (args, next) => {
+                const data = args[0];
+
+                if (
+                    state.isEnforced &&
+                    isObject(data) &&
+                    data.Sender === Player.MemberNumber &&
+                    typeof data.Content === "string"
+                ) {
+                    const hasOOC = /\([^)]+\)/.test(data.Content);
+                    const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && data.Type === "Whisper";
+
+                    if (hasOOC && !isWhisperAllowed) {
+                        return; // 화면에 메시지를 출력하지 않고 무시
+                    }
+                }
+                return next(args);
+            }, ModuleCategory.Rules);
+
+            // [2] 서버로 나가는 패킷 전송 차단
+            hookFunction("ServerSend", 10, (args, next) => {
+                const messageType = args[0];
+                const data = args[1];
+
+                if (
+                    state.isEnforced &&
+                    messageType === "ChatRoomChat" &&
+                    isObject(data)
+                ) {
+                    const chatData = data as { Content?: string; Type?: string; Target?: number };
+
+                    if (typeof chatData.Content === "string") {
+                        const hasOOC = /\([^)]+\)/.test(chatData.Content);
+                        const isWhisperAllowed = Boolean(state.customData?.allowWhispers) && chatData.Type === "Whisper";
+
+                        if (hasOOC && !isWhisperAllowed) {
+                            state.triggerAttempt();
+                            return; // 서버 전송 취소
+                        }
+                    }
+                }
+                return next(args);
+            }, ModuleCategory.Rules);
+        },
+        init(state) {
+            const check = (msg: SpeechMessageInfo): boolean => {
+                if (!msg.hasOOC) return true;
+                if (Boolean(state.customData?.allowWhispers) && msg.type === "Whisper") return true;
+                return false;
+            };
+
+            registerSpeechHook({
+                allowSend: (msg) => {
+                    if (state.isEnforced && !check(msg)) {
+                        state.triggerAttempt();
+                        return SpeechHookAllow.BLOCK;
+                    }
+                    return SpeechHookAllow.ALLOW;
+                },
+                onSend: (msg) => {
+                    if (state.inEffect && !check(msg)) {
+                        state.trigger();
+                    }
+                },
+            });
+        },
+    });
 
 	registerRule("speech_doll_talk", {
 		name: "Doll talk",
@@ -766,7 +872,7 @@ export function initRules_bc_speech_control() {
 		defaultLimit: ConditionsLimit.limited,
 		dataDefinition: {
 			stringWithReplacingSyntax: {
-				type: "string",
+				type: "textArea",
 				default: "[I,me;this cutie],[spoken_word;replaced_with_this_word]",
 				description: "List in syntax: [word1;substitute1],[w2,w3,...;s2],...",
 				options: /^([^/.*()][^()]*)?$/,
