@@ -495,7 +495,7 @@ export function onUnhandledRejection(event: PromiseRejectionEvent) {
 }
 
 export function reportManualError(description: string, error: unknown) {
-	console.error(`BCX: Error report: ${description}\n`, error);
+	console.error(`HardCoreClub: Error report: ${description}\n`, error);
 	if (!firstError)
 		return;
 	firstError = false;
@@ -519,7 +519,7 @@ export function reportManualError(description: string, error: unknown) {
 export function reportProblematicOutgoingMessage(messageType: string, message: unknown[]) {
 	const totalSize = measureDataSize(message);
 
-	console.error(`BCX: Outgoing message size: ${totalSize}`, "\nIndividual sizes:", message.map(measureDataSize), "\nMessage:", message);
+	console.error(`HardCoreClub Outgoing message size: ${totalSize}`, "\nIndividual sizes:", message.map(measureDataSize), "\nMessage:", message);
 	if (!firstError)
 		return;
 	firstError = false;
