@@ -10,6 +10,7 @@ import { developmentMode } from "../utilsClub";
 import { ChatroomSM } from "./chatroom";
 import { GuiTutorial } from "../gui/tutorial";
 import { BCXGlobalEventSystem } from "../event";
+import { othersBCXAccessBlockedByRule } from "./authority";
 
 export function getCurrentSubscreen(): GuiSubscreen | null {
 	return ModuleGUI.instance && ModuleGUI.instance.currentSubscreen;
