@@ -2,7 +2,7 @@ import { ChatroomCharacter, getChatroomCharacter } from "../characters";
 import { GuiMainMenu } from "../gui/mainmenu";
 import { GuiSubscreen } from "../gui/subscreen";
 import { BaseModule } from "./_BaseModule";
-import { hookFunction } from "../patching";
+import { hookFunction, patchFunction } from "../patching";
 import { icon_BCX } from "../resources";
 import { changeHandlers } from "./messaging";
 import { firstTimeInit } from "./storage";
@@ -40,8 +40,7 @@ export class ModuleGUI extends BaseModule {
 		if (this._currentSubscreen) {
 			this._currentSubscreen.Load();
 		}
-		// Precaution against the variable still being potentially uninitialized during `unload_modules()` calls
-		ChatroomSM?.UpdateStatus();
+		ChatroomSM.UpdateStatus();
 		BCXGlobalEventSystem.emitEvent("bcxSubscreenChange", {
 			inBcxSubscreen: subscreen != null,
 		});
@@ -70,66 +69,11 @@ export class ModuleGUI extends BaseModule {
 	}
 
 	load() {
-		hookFunction("InformationSheetLoad", 10, async (args, next) => {
-			const ret = await next(args);
-
-			const C = this.getInformationSheetCharacter();
-
-			if (!C) return ret;
-
-			const playerHasAccessToCharacter = C.playerHasAccessToCharacter();
-			const otherAccessBlocked = !C.isPlayer() && othersBCXAccessBlockedByRule();
-
-			let button: HTMLButtonElement | null = null;
-			if (firstTimeInit && C.isPlayer()) {
-				button = ElementButton.Create(null, () => {
-					unloadInfoSheet();
-					this.currentSubscreen = new GuiTutorial(C, true);
-				},
-				{
-					image: icon_BCX,
-					disabled: !playerHasAccessToCharacter || otherAccessBlocked,
-					tooltip: "You can find BCX here ►",
-				},
-				{
-					tooltip: {
-						style: {
-							visibility: "visible",
-						},
-					},
-					button: {
-						style: {
-							marginTop: "auto",
-						},
-					},
-				});
-			} else if (!firstTimeInit && C.BCXVersion !== null) {
-				const tooltip = !playerHasAccessToCharacter ?
-					"Needs BC item permission"
-					: otherAccessBlocked ?
-					"Access blocked by a BCX rule"
-					: "BCX";
-				button = ElementButton.Create(null, () => {
-					unloadInfoSheet();
-					this.currentSubscreen = new GuiMainMenu(C);
-				},
-				{
-					image: icon_BCX,
-					disabled: !playerHasAccessToCharacter || otherAccessBlocked,
-					tooltip,
-				},
-				{
-					button: {
-						style: {
-							marginTop: "auto",
-						},
-					},
-				});
-			}
-			if (button) {
-				const menu = ElementWrap(`${InformationSheetIDs.screen}-menu`);
-				menu?.append(button);
-			}
+		patchFunction("InformationSheetRun", {
+			"DrawButton(1815, 765, 90, 90,": "DrawButton(1815, 800, 90, 90,",
+		});
+		patchFunction("InformationSheetClick", {
+			"MouseIn(1815, 765, 90, 90)": "MouseIn(1815, 800, 90, 90)",
 		});
 		hookFunction("InformationSheetRun", 10, (args, next) => {
 			if (this._currentSubscreen) {
@@ -161,6 +105,17 @@ export class ModuleGUI extends BaseModule {
 			}
 
 			next(args);
+			const C = this.getInformationSheetCharacter();
+			if (firstTimeInit) {
+				if (C && C.isPlayer()) {
+					DrawButton(1815, 685, 90, 90, "", "White", icon_BCX);
+					DrawRect(1300, 685, 500, 90, "Black");
+					DrawText(`You can find BCX here ►`, 1550, 685 + 45, "White");
+				}
+			} else if (C && C.BCXVersion !== null) {
+				const playerHasAccessToCharacter = C.playerHasAccessToCharacter();
+				DrawButton(1815, 685, 90, 90, "", playerHasAccessToCharacter ? "White" : "#ddd", icon_BCX, playerHasAccessToCharacter ? "BCX" : "Needs BC item permission", !playerHasAccessToCharacter);
+			}
 		});
 
 		const unloadInfoSheet = () => {
@@ -172,7 +127,20 @@ export class ModuleGUI extends BaseModule {
 				return this._currentSubscreen.Click();
 			}
 
-			return next(args);
+			const C = this.getInformationSheetCharacter();
+			if (MouseIn(1815, 685, 90, 90)) {
+				if (firstTimeInit) {
+					unloadInfoSheet();
+					if (C && C.isPlayer()) {
+						this.currentSubscreen = new GuiTutorial(C, true);
+					}
+				} else if (C && C.BCXVersion !== null && C.playerHasAccessToCharacter()) {
+					unloadInfoSheet();
+					this.currentSubscreen = new GuiMainMenu(C);
+				}
+			} else {
+				return next(args);
+			}
 		});
 
 		hookFunction("InformationSheetExit", 10, (args, next) => {
